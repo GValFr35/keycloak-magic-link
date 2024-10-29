@@ -52,14 +52,16 @@ public class MagicLinkActionTokenHandler extends AbstractActionTokenHandler<Magi
   }
 
   @Override
-  public boolean canUseTokenRepeatedly(MagicLinkActionToken token, ActionTokenContext<MagicLinkActionToken> tokenContext) {
-    return token.getActionTokenPersistent(); //Invalidate action token after one use if configured to do so
+  public boolean canUseTokenRepeatedly(
+      MagicLinkActionToken token, ActionTokenContext<MagicLinkActionToken> tokenContext) {
+    return token
+        .getActionTokenPersistent(); // Invalidate action token after one use if configured to do so
   }
 
   @Override
   public Response handleToken(
       MagicLinkActionToken token, ActionTokenContext<MagicLinkActionToken> tokenContext) {
-    log.infof("handleToken for iss:%s, user:%s", token.getIssuedFor(), token.getUserId());
+    log.debugf("handleToken for iss:%s, user:%s", token.getIssuedFor(), token.getUserId());
     UserModel user = tokenContext.getAuthenticationSession().getAuthenticatedUser();
 
     final AuthenticationSessionModel authSession = tokenContext.getAuthenticationSession();
@@ -69,7 +71,7 @@ public class MagicLinkActionTokenHandler extends AbstractActionTokenHandler<Magi
             ? token.getRedirectUri()
             : ResolveRelative.resolveRelativeUri(
                 tokenContext.getSession(), client.getRootUrl(), client.getBaseUrl());
-    log.infof("Using redirect_uri %s", redirectUri);
+    log.debugf("Using redirect_uri %s", redirectUri);
 
     String redirect =
         RedirectUtils.verifyRedirectUri(
@@ -84,12 +86,13 @@ public class MagicLinkActionTokenHandler extends AbstractActionTokenHandler<Magi
       }
       if (token.getNonce() != null) {
         authSession.setClientNote(OIDCLoginProtocol.NONCE_PARAM, token.getNonce());
+        authSession.setUserSessionNote(OIDCLoginProtocol.NONCE_PARAM, token.getNonce());
       }
     }
 
     if (token.getScope() != null) {
       authSession.setClientNote(OAuth2Constants.SCOPE, token.getScope());
-      AuthenticationManager.setClientScopesInSession(authSession);
+      AuthenticationManager.setClientScopesInSession(tokenContext.getSession(), authSession);
     }
 
     if (token.getRememberMe() != null && token.getRememberMe()) {
